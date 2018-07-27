@@ -13,9 +13,9 @@
 #include <string.h>
 #include <vfs_file.h>
 
-#ifdef __ICCARM__
+//#ifdef __ICCARM__
 #include <sys/select.h>
-#endif
+//#endif
 
 #ifdef IO_NEED_TRAP
 #include <vfs_trap.h>

@@ -9,6 +9,10 @@
 #include <errno.h>
 #include <aos/aos.h>
 
+#ifndef SYSINFO_DEVICE_NAME
+#define SYSINFO_DEVICE_NAME "fm33a0xx_discovery"
+#endif
+
 #define RET_CHAR  '\n'
 #define END_CHAR  '\r'
 #define PROMPT    "# "

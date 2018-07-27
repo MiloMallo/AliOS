@@ -78,11 +78,11 @@
 #define LED4_Pin								GPIO_Pin_14
 #define LED4_Port 							GPIOC
 
-#define DBGCOMRX_Pin						GPIO_Pin_2
+#define DBGCOMRX_Pin						GPIO_Pin_0
 #define DBGCOMRX_Port 					GPIOB
-#define DBGCOMTX_Pin						GPIO_Pin_3
+#define DBGCOMTX_Pin						GPIO_Pin_1
 #define DBGCOMTX_Port 					GPIOB 
-#define DBGUART 								UART2 
+#define DBGUART 								UART1 
 
 //定义常量, 常数
 //系统时钟默认使用RCHF

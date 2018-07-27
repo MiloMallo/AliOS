@@ -10,7 +10,9 @@
 #if (RHINO_CONFIG_KOBJ_DYN_ALLOC == 0)
 #warning "RHINO_CONFIG_KOBJ_DYN_ALLOC is disabled!"
 #endif
-
+#ifndef SYSINFO_KERNEL_VERSION
+#define SYSINFO_KERNEL_VERSION "aos_rhino-xx"
+#endif
 #define MS2TICK(ms) krhino_ms_to_ticks(ms)
 
 static unsigned int used_bitmap;

@@ -456,7 +456,9 @@ int32_t hal_uart_recv_II(uart_dev_t *uart, void *data, uint32_t expect_size,
     if ((lastTick - SysTick->VAL > (timeout * ((__SYSTEM_CLOCK/1000)))) &&
         (recv_index < expect_size))
     {
-      *recv_size = recv_index;
+      if(recv_size!=NULL){
+        *recv_size = recv_index;
+      }
       return EIO;
     }
   }

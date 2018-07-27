@@ -465,7 +465,7 @@ void SysTick_Handler(void)
 	krhino_intrpt_enter();
 	krhino_tick_proc();
 	krhino_intrpt_exit();
-
+	IWDT_Clr();
 	//HAL_SYSTICK_IRQHandler();
 }
 
