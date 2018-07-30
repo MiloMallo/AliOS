@@ -68,6 +68,62 @@
 #include "wdg.h"
 
 
+/*
+ * UART Name
+ */
+typedef enum 
+{
+  UART_0,
+  UART_1,
+  UART_2,
+  UART_3,
+  UART_4,
+  UART_5
+}hal_uart_name_t;
+
+/*
+ * UART Port/Pin
+ */
+#define UART0RX_Pin						  GPIO_Pin_3
+#define UART0RX_Port 					  GPIOF
+#define UART0TX_Pin						  GPIO_Pin_4
+#define UART0TX_Port 					  GPIOF
+  
+#define UART1RX_Pin						  GPIO_Pin_0
+#define UART1RX_Port 					  GPIOB
+#define UART1TX_Pin						  GPIO_Pin_1
+#define UART1TX_Port 					  GPIOB
+  
+  //#define UART1RX_Pin             GPIO_Pin_3
+  //#define UART1RX_Port            GPIOE
+  //#define UART1TX_Pin             GPIO_Pin_4
+  //#define UART1TX_Port            GPIOE
+  
+#define UART2RX_Pin						  GPIO_Pin_2
+#define UART2RX_Port 					  GPIOB
+#define UART2TX_Pin						  GPIO_Pin_3
+#define UART2TX_Port 					  GPIOB
+  
+#define UART3RX_Pin						  GPIO_Pin_10
+#define UART3RX_Port 					  GPIOC
+#define UART3TX_Pin						  GPIO_Pin_11
+#define UART3TX_Port 					  GPIOC
+  
+#define UART4RX_Pin						  GPIO_Pin_0
+#define UART4RX_Port 					  GPIOD
+#define UART4TX_Pin						  GPIO_Pin_1
+#define UART4TX_Port 					  GPIOD
+  
+  //#define UART4RX_Pin             GPIO_Pin_9
+  //#define UART4RX_Port            GPIOD
+  //#define UART4TX_Pin             GPIO_Pin_10
+  //#define UART4TX_Port            GPIOD
+  
+#define UART5RX_Pin						  GPIO_Pin_4
+#define UART5RX_Port 					  GPIOC
+#define UART5TX_Pin						  GPIO_Pin_5
+#define UART5TX_Port 					  GPIOC
+
 #define LED1_Pin								GPIO_Pin_10
 #define LED1_Port 							GPIOB
 #define LED2_Pin								GPIO_Pin_9
@@ -82,11 +138,11 @@
 #define DBGCOMRX_Port 					GPIOB
 #define DBGCOMTX_Pin						GPIO_Pin_1
 #define DBGCOMTX_Port 					GPIOB 
-#define DBGUART 								UART1 
+#define DBGUART 								UART_1
 
 //定义常量, 常数
 //系统时钟默认使用RCHF
-#define RCHFCLKCFG							16	//8, 16, 24, 32MHz
+#define RCHFCLKCFG							8	//8, 16, 24, 32MHz
 
 //define_all.h中RCHFCLKCFG控制系统时钟
 #if ( 													RCHFCLKCFG == 8 )//8.0MHz

@@ -2,136 +2,17 @@
  * Copyright (C) 2015-2017 Alibaba Group Holding Limited
  */
 
-#ifndef HAL_UART_H
-#define HAL_UART_H
+#ifndef HAL_UART_C
+#define HAL_UART_C
 #include "stdint.h"
 #include "errno.h"
 #include "fm33a0xx_include_all.h"
 #include "soc_init.h"
-
+#include "uart.h"
 // ============== Fm33A0X Uart Define Begin =============== //
-/*
- * UART Name
- */
-typedef enum 
-{
-  UART_0,
-  UART_1,
-  UART_2,
-  UART_3,
-  UART_4,
-  UART_5
-}hal_uart_name_t;
 
-/*
- * UART Port/Pin
- */
-#define UART0RX_Pin						  GPIO_Pin_3
-#define UART0RX_Port 					  GPIOF
-#define UART0TX_Pin						  GPIO_Pin_4
-#define UART0TX_Port 					  GPIOF
-
-#define UART1RX_Pin						  GPIO_Pin_0
-#define UART1RX_Port 					  GPIOB
-#define UART1TX_Pin						  GPIO_Pin_1
-#define UART1TX_Port 					  GPIOB
-
-//#define UART1RX_Pin						  GPIO_Pin_3
-//#define UART1RX_Port 					  GPIOE
-//#define UART1TX_Pin						  GPIO_Pin_4
-//#define UART1TX_Port 					  GPIOE
-
-#define UART2RX_Pin						  GPIO_Pin_2
-#define UART2RX_Port 					  GPIOB
-#define UART2TX_Pin						  GPIO_Pin_3
-#define UART2TX_Port 					  GPIOB
-
-#define UART3RX_Pin						  GPIO_Pin_10
-#define UART3RX_Port 					  GPIOC
-#define UART3TX_Pin						  GPIO_Pin_11
-#define UART3TX_Port 					  GPIOC
-
-#define UART4RX_Pin						  GPIO_Pin_0
-#define UART4RX_Port 					  GPIOD
-#define UART4TX_Pin						  GPIO_Pin_1
-#define UART4TX_Port 					  GPIOD
-
-//#define UART4RX_Pin						  GPIO_Pin_9
-//#define UART4RX_Port 					  GPIOD
-//#define UART4TX_Pin						  GPIO_Pin_10
-//#define UART4TX_Port 					  GPIOD
-
-#define UART5RX_Pin						  GPIO_Pin_4
-#define UART5RX_Port 					  GPIOC
-#define UART5TX_Pin						  GPIO_Pin_5
-#define UART5TX_Port 					  GPIOC
 
 // ============== Fm33A0X Uart Define End =============== //
-
-/*
- * UART data width
- */
-typedef enum {
-    DATA_WIDTH_5BIT,
-    DATA_WIDTH_6BIT,
-    DATA_WIDTH_7BIT,
-    DATA_WIDTH_8BIT,
-    DATA_WIDTH_9BIT
-} hal_uart_data_width_t;
-
-/*
- * UART stop bits
- */
-typedef enum {
-    STOP_BITS_1,
-    STOP_BITS_2
-} hal_uart_stop_bits_t;
-
-/*
- * UART flow control
- */
-typedef enum {
-    FLOW_CONTROL_DISABLED,
-    FLOW_CONTROL_CTS,
-    FLOW_CONTROL_RTS,
-    FLOW_CONTROL_CTS_RTS
-} hal_uart_flow_control_t;
-
-/*
- * UART parity
- */
-typedef enum {
-    NO_PARITY,
-    EVEN_PARITY,    
-    ODD_PARITY
-} hal_uart_parity_t;
-
-/*
- * UART mode
- */
-typedef enum {
-    MODE_TX,
-    MODE_RX,
-    MODE_TX_RX
-} hal_uart_mode_t;
-
-/*
- * UART configuration
- */
-typedef struct {
-    uint32_t                baud_rate;
-    hal_uart_data_width_t   data_width;
-    hal_uart_parity_t       parity;
-    hal_uart_stop_bits_t    stop_bits;
-    hal_uart_flow_control_t flow_control;
-    hal_uart_mode_t         mode;
-} uart_config_t;
-
-typedef struct {
-    uint8_t       port;    /* uart port */
-    uart_config_t config;  /* uart config */
-    void         *priv;    /* priv data */
-} uart_dev_t;
 
 /**
  * Initialises a UART interface

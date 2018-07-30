@@ -59,6 +59,7 @@
 #define PUTCHAR_PROTOTYPE 			int __io_putchar(int ch)
 #define GETCHAR_PROTOTYPE 			int __io_getchar(void)
 #endif /* defined (__CC_ARM) && defined(__MICROLIB) */
+uart_dev_t uart_0;
 
 //cpu滴答定时器配置(软件延时用)
 void Init_SysTick(uint32_t ticksPerSecond)
@@ -410,20 +411,20 @@ void Init_IO(void)
 	OutputIO(LED2_Port, LED2_Pin, 0); 								//led2
 	OutputIO(LED3_Port, LED3_Pin, 0); 								//led3
 	OutputIO(LED4_Port, LED4_Pin, 0); 								//led4
-	AltFunIO(DBGCOMRX_Port, DBGCOMRX_Pin, 0); 				//debug uart rx
-	AltFunIO(DBGCOMTX_Port, DBGCOMTX_Pin, 0); 				//debug uart tx
+	AltFunIO(DBGCOMRX_Port, DBGCOMRX_Pin, 1); 				//debug uart rx
+	AltFunIO(DBGCOMTX_Port, DBGCOMTX_Pin, 1); 				//debug uart tx
 }
 
 static void configDelay(void) //约40ms
 {
 	__IO uint32_t count;
 
-	for (count = SYSTEM_CLK / 100; count > 0; count--);
+	for (count = SYSTEM_CLK / 10; count > 0; count--,IWDT_Clr());
 }
 
 void Init_System(void)
 {
-	UART_InitTypeDef uartConfig;
+//	UART_InitTypeDef uartConfig;
 
 	/*基础系统配置*/
 	__disable_irq();																	//关闭全局中断使能
@@ -435,11 +436,20 @@ void Init_System(void)
 	RCC_Init_RCHF_Trim(clkmode);											//RCHF振荡器校准值载入(芯片复位后自动载入8M的校准值)
 
 	/*用户初始化代码*/
-	memset(&uartConfig, 0, sizeof(uartConfig));
-	uartConfig.RXEN = ENABLE;
-	uartConfig.TXEN = ENABLE;
-	uartConfig.SPBRG = SYSTEM_CLK / 9600;
-	UART_Init(DBGUART, &uartConfig);
+//	memset(&uartConfig, 0, sizeof(uartConfig));
+//	uartConfig.RXEN = ENABLE;
+//	uartConfig.TXEN = ENABLE;
+//	uartConfig.SPBRG = SYSTEM_CLK / 9600;
+//	UART_Init(DBGUART, &uartConfig);
+  uart_0.port = DBGUART;
+  uart_0.config.baud_rate=9600;
+  uart_0.config.data_width = DATA_WIDTH_8BIT;
+  uart_0.config.flow_control = FLOW_CONTROL_DISABLED;
+  uart_0.config.parity = NO_PARITY;
+  uart_0.config.stop_bits = STOP_BITS_1;
+  uart_0.config.mode=MODE_TX_RX;
+  hal_uart_init(&uart_0);
+
 	__enable_irq(); 																	//打开全局中断使能
 }
 
@@ -450,13 +460,25 @@ void Init_System(void)
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+ 
 /* USER CODE END 0 */
+//static uint8_t temp[64];
 void soc_init(void)
 {
+//  int i;
 	Init_System();
 	Init_IO();
+//  memset(temp,0,sizeof(temp));
 	Init_SysTick(RHINO_CONFIG_TICKS_PER_SECOND);			//cpu滴答定时器配置(软件延时用)	
+  RCC_PERCLK_SetableEx(FLSEPCLK, ENABLE);
+  FLASH_Deinit();
+  NVIC_SetPriority (NVMIF_IRQn, (1<<__NVIC_PRIO_BITS) - 1); 
+//  for(i=0x30000;i<0x40000;i+=64)
+//  {
+//    FLASH_Erase_Sector(i);
+//    FLASH_Prog_ByteString(i,temp,64);
+//    printf("flash address=0x%08x flag=0x%08x\r\n",i,FLASH->FLSIF);
+//  }
 }
 
 void SysTick_Handler(void)
@@ -465,7 +487,7 @@ void SysTick_Handler(void)
 	krhino_intrpt_enter();
 	krhino_tick_proc();
 	krhino_intrpt_exit();
-	IWDT_Clr();
+  IWDT_Clr();
 	//HAL_SYSTICK_IRQHandler();
 }
 
@@ -479,7 +501,7 @@ void SysTick_Handler(void)
 	* @param	None
 	* @retval None
 	*/
-__weak void _Error_Handler(char * file, int line)
+__attribute__((weak)) void _Error_Handler(char * file, int line)
 {
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
@@ -520,14 +542,16 @@ PUTCHAR_PROTOTYPE
 	if (ch == '\n')
 	{
 		//hal_uart_send(&console_uart, (void *)"\r", 1, 30000);
-		while (UART_UARTIF_RxTxIF_ChkEx(DBGUART, TxInt) == 0);
+//		while (UART_UARTIF_RxTxIF_ChkEx(DBGUART, TxInt) == 0);
 
-		UARTx_TXREG_Write(DBGUART, '\r');
+//		UARTx_TXREG_Write(DBGUART, '\r');
+    hal_uart_send(&uart_0,"\r",1,1);
 	}
+  hal_uart_send(&uart_0,&ch,1,1);
 
-	while (UART_UARTIF_RxTxIF_ChkEx(DBGUART, TxInt) == 0);
+//	while (UART_UARTIF_RxTxIF_ChkEx(DBGUART, TxInt) == 0);
 
-	UARTx_TXREG_Write(DBGUART, ch);
+//	UARTx_TXREG_Write(DBGUART, ch);
 
 	return ch;
 }
@@ -541,14 +565,20 @@ GETCHAR_PROTOTYPE
 {
 	/* Place your implementation of fgetc here */
 	/* e.g. readwrite a character to the USART2 and Loop until the end of transmission */
-	if (UART_UARTIF_RxTxIF_ChkEx(DBGUART, RxInt) == 0)
-	{
-		return - 1;
-	}
-	else 
-	{
-		return UARTx_RXREG_Read(DBGUART);
-	}
+//	if (UART_UARTIF_RxTxIF_ChkEx(DBGUART, RxInt) == 0)
+//	{
+//		return - 1;
+//	}
+//	else 
+//	{
+//		return UARTx_RXREG_Read(DBGUART);
+//	}
+  char c;
+  if(hal_uart_recv(&uart_0,&c,1,1)==0)
+  {
+    return c;
+  }
+  return  -1;
 }
 
 
@@ -556,7 +586,7 @@ void krhino_idle_hook()
 {
   IWDT_Clr();
 }
-uart_dev_t uart_0;
+
 
 /**
 	* @}
