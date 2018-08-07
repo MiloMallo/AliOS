@@ -37,40 +37,40 @@
 //2018-04-02-13-21-26
 //FM33A0XX_Driver_Gen_V1.4
 
-#define	IWDT_IWDTSERV_IWDTSERV_Pos	0	/* IWDTï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ */
+#define	IWDT_IWDTSERV_IWDTSERV_Pos	0	/* IWDTÇå³ý¼Ä´æÆ÷ */
 #define	IWDT_IWDTSERV_IWDTSERV_Msk	(0xffffffffU << IWDT_IWDTSERV_IWDTSERV_Pos)
 
-#define	IWDT_IWDTCFG_IWDTSLP4096S_Pos	2	/* IWDTï¿½ï¿½ï¿½ï¿½4096sï¿½ï¿½ï¿½ï¿½ */
+#define	IWDT_IWDTCFG_IWDTSLP4096S_Pos	2	/* IWDTÐÝÃß4096sÅäÖÃ */
 #define	IWDT_IWDTCFG_IWDTSLP4096S_Msk	(0x1U << IWDT_IWDTCFG_IWDTSLP4096S_Pos)
-	/* 0:ï¿½ï¿½ï¿½ßºï¿½ï¿½ï¿½Ê¹ï¿½ï¿½IWDTOVPï¿½ï¿½ï¿½ï¿½ï¿½ÃµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½ */
-	/* 1:ï¿½ï¿½ï¿½ßºï¿½IWDTï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½Ê¹ï¿½ï¿½4096S */
+	/* 0:ÐÝÃßºóÈÔÊ¹ÓÃIWDTOVPÖÐÅäÖÃµÄ¶ÌÖÜÆÚ */
+	/* 1:ÐÝÃßºóIWDTÖÜÆÚ×Ô¶¯Ê¹ÓÃ4096S */
 
-#define	IWDT_IWDTCFG_IWDTOVP_Pos	0	/* IWDTï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+#define	IWDT_IWDTCFG_IWDTOVP_Pos	0	/* IWDTÒç³öÖÜÆÚÉèÖÃ */
 #define	IWDT_IWDTCFG_IWDTOVP_Msk	(0x3U << IWDT_IWDTCFG_IWDTOVP_Pos)
-#define	IWDT_IWDTCFG_IWDTOVP_125ms	(0x0U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x00ï¿½ï¿½125ms */
-#define	IWDT_IWDTCFG_IWDTOVP_500ms	(0x1U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x01ï¿½ï¿½500ms */
-#define	IWDT_IWDTCFG_IWDTOVP_2s	(0x2U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x10ï¿½ï¿½2s */
-#define	IWDT_IWDTCFG_IWDTOVP_8s	(0x3U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x11ï¿½ï¿½8s */
+#define	IWDT_IWDTCFG_IWDTOVP_125ms	(0x0U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x00£º125ms */
+#define	IWDT_IWDTCFG_IWDTOVP_500ms	(0x1U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x01£º500ms */
+#define	IWDT_IWDTCFG_IWDTOVP_2s	(0x2U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x10£º2s */
+#define	IWDT_IWDTCFG_IWDTOVP_8s	(0x3U << IWDT_IWDTCFG_IWDTOVP_Pos)	/* x11£º8s */
 
-#define	IWDT_IWDTCNT_IWDTCNT_Pos	0	/* IWDTï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Öµ */
+#define	IWDT_IWDTCNT_IWDTCNT_Pos	0	/* IWDTµ±Ç°¼ÆÊýÖµ */
 #define	IWDT_IWDTCNT_IWDTCNT_Msk	(0x3ffffU << IWDT_IWDTCNT_IWDTCNT_Pos)
 //Macro_End
 
 /* Exported functions --------------------------------------------------------*/ 
 extern void IWDT_Deinit(void);
 
-/* IWDTï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ ï¿½ï¿½Øºï¿½ï¿½ï¿½ */
+/* IWDTÇå³ý¼Ä´æÆ÷ Ïà¹Øº¯Êý */
 extern void IWDT_IWDTSERV_Write(uint32_t SetValue);
 
-/* IWDTï¿½ï¿½ï¿½ï¿½4096sï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Øºï¿½ï¿½ï¿½ */
+/* IWDTÐÝÃß4096sÅäÖÃ Ïà¹Øº¯Êý */
 extern void IWDT_IWDTCFG_IWDTSLP4096S_Setable(FunState NewState);
 extern FunState IWDT_IWDTCFG_IWDTSLP4096S_Getable(void);
 
-/* IWDTï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Øºï¿½ï¿½ï¿½ */
+/* IWDTÒç³öÖÜÆÚÉèÖÃ Ïà¹Øº¯Êý */
 extern void IWDT_IWDTCFG_IWDTOVP_Set(uint32_t SetValue);
 extern uint32_t IWDT_IWDTCFG_IWDTOVP_Get(void);
 
-/* IWDTï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Öµ ï¿½ï¿½Øºï¿½ï¿½ï¿½ */
+/* IWDTµ±Ç°¼ÆÊýÖµ Ïà¹Øº¯Êý */
 extern uint32_t IWDT_IWDTCNT_Read(void);
 //Announce_End
 

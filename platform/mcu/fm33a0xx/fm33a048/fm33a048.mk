@@ -18,9 +18,11 @@ GLOBAL_DEFINES += CONFIG_AOS_KV_PTN_SIZE=4096
 GLOBAL_DEFINES += CONFIG_AOS_KV_BUFFER_SIZE=8192
 
 GLOBAL_INCLUDES += ../../arch/arm/armv6m/gcc/m0plus
+                    
 GLOBAL_INCLUDES += drivers \
                    device/include    \
-                   aos
+                   aos\
+                   ../../../include/aos
 
 GLOBAL_CFLAGS += -mcpu=cortex-m0plus \
                  -march=armv6-m \

@@ -60,53 +60,6 @@ void GPIO_IRQHandler(void)
   }
 }
 
-/*
- *  GPIO port name
- */
-typedef enum 
-{
-  GPIO_A,
-  GPIO_B,
-  GPIO_C,
-  GPIO_D,
-  GPIO_E,
-  GPIO_F,
-  GPIO_G
-}hal_gpio_port_name_t;
-
-/*
- *  GPIO pin name
- */
-typedef enum 
-{
-  GPIO_PIN_0,
-  GPIO_PIN_1,
-  GPIO_PIN_2,
-  GPIO_PIN_3,
-  GPIO_PIN_4,
-  GPIO_PIN_5,
-  GPIO_PIN_6,
-  GPIO_PIN_7,
-  GPIO_PIN_8,
-  GPIO_PIN_9,
-  GPIO_PIN_10,
-  GPIO_PIN_11,
-  GPIO_PIN_12,
-  GPIO_PIN_13,
-  GPIO_PIN_14,
-  GPIO_PIN_15
-}hal_gpio_pin_name_t;
-
-/*
- *  GPIO irq name
- */
-typedef enum 
-{
-  EXTI_0,
-  EXTI_1,
-  EXTI_2
-}hal_gpio_irq_name_t;
-
 // transform port to GPIOx
 int8_t port_transform_GPIOx(uint8_t port, GPIOx_Type** GPIOx)
 {

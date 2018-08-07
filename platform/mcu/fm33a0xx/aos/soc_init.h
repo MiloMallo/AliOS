@@ -50,6 +50,7 @@
 
 /* Private define ------------------------------------------------------------*/
 #include "fm33a0xx_include_all.h"
+#include "adc.h"
 #include "flash.h"
 #include "gpio.h"
 #include "i2c.h"
@@ -66,6 +67,109 @@
 #include "uart.h"
 #include "wdg.h"
 
+#include "k_api.h"
+//#include "kernel.h"
+/*
+ *  GPIO port name
+ */
+typedef enum 
+{
+  GPIO_A,
+  GPIO_B,
+  GPIO_C,
+  GPIO_D,
+  GPIO_E,
+  GPIO_F,
+  GPIO_G
+}hal_gpio_port_name_t;
+
+/*
+ *  GPIO pin name
+ */
+typedef enum 
+{
+  GPIO_PIN_0,
+  GPIO_PIN_1,
+  GPIO_PIN_2,
+  GPIO_PIN_3,
+  GPIO_PIN_4,
+  GPIO_PIN_5,
+  GPIO_PIN_6,
+  GPIO_PIN_7,
+  GPIO_PIN_8,
+  GPIO_PIN_9,
+  GPIO_PIN_10,
+  GPIO_PIN_11,
+  GPIO_PIN_12,
+  GPIO_PIN_13,
+  GPIO_PIN_14,
+  GPIO_PIN_15
+}hal_gpio_pin_name_t;
+
+/*
+ *  GPIO irq name
+ */
+typedef enum 
+{
+  EXTI_0,
+  EXTI_1,
+  EXTI_2
+}hal_gpio_irq_name_t;
+/*
+ * UART Name
+ */
+typedef enum 
+{
+  UART_0,
+  UART_1,
+  UART_2,
+  UART_3,
+  UART_4,
+  UART_5
+}hal_uart_name_t;
+
+/*
+ * UART Port/Pin
+ */
+#define UART0RX_Pin						  GPIO_Pin_3
+#define UART0RX_Port 					  GPIOF
+#define UART0TX_Pin						  GPIO_Pin_4
+#define UART0TX_Port 					  GPIOF
+  
+#define UART1RX_Pin						  GPIO_Pin_0
+#define UART1RX_Port 					  GPIOB
+#define UART1TX_Pin						  GPIO_Pin_1
+#define UART1TX_Port 					  GPIOB
+  
+  //#define UART1RX_Pin             GPIO_Pin_3
+  //#define UART1RX_Port            GPIOE
+  //#define UART1TX_Pin             GPIO_Pin_4
+  //#define UART1TX_Port            GPIOE
+  
+#define UART2RX_Pin						  GPIO_Pin_2
+#define UART2RX_Port 					  GPIOB
+#define UART2TX_Pin						  GPIO_Pin_3
+#define UART2TX_Port 					  GPIOB
+  
+#define UART3RX_Pin						  GPIO_Pin_10
+#define UART3RX_Port 					  GPIOC
+#define UART3TX_Pin						  GPIO_Pin_11
+#define UART3TX_Port 					  GPIOC
+  
+#define UART4RX_Pin						  GPIO_Pin_0
+#define UART4RX_Port 					  GPIOD
+#define UART4TX_Pin						  GPIO_Pin_1
+#define UART4TX_Port 					  GPIOD
+  
+  //#define UART4RX_Pin             GPIO_Pin_9
+  //#define UART4RX_Port            GPIOD
+  //#define UART4TX_Pin             GPIO_Pin_10
+  //#define UART4TX_Port            GPIOD
+  
+#define UART5RX_Pin						  GPIO_Pin_4
+#define UART5RX_Port 					  GPIOC
+#define UART5TX_Pin						  GPIO_Pin_5
+#define UART5TX_Port 					  GPIOC
 
 #define LED1_Pin								GPIO_Pin_10
 #define LED1_Port 							GPIOB
@@ -77,15 +181,15 @@
 #define LED4_Pin								GPIO_Pin_14
 #define LED4_Port 							GPIOC
 
-#define DBGCOMRX_Pin						GPIO_Pin_2
+#define DBGCOMRX_Pin						GPIO_Pin_0
 #define DBGCOMRX_Port 					GPIOB
-#define DBGCOMTX_Pin						GPIO_Pin_3
+#define DBGCOMTX_Pin						GPIO_Pin_1
 #define DBGCOMTX_Port 					GPIOB 
-#define DBGUART 								UART2 
+#define DBGUART 								UART_1 
 
 //���峣��, ����
 //ϵͳʱ��Ĭ��ʹ��RCHF
-#define RCHFCLKCFG							16	//8, 16, 24, 32MHz
+#define RCHFCLKCFG							8	//8, 16, 24, 32MHz
 
 //define_all.h��RCHFCLKCFG����ϵͳʱ��
 #if ( 													RCHFCLKCFG == 8 )//8.0MHz

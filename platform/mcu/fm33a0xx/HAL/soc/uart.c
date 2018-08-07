@@ -2,136 +2,340 @@
  * Copyright (C) 2015-2017 Alibaba Group Holding Limited
  */
 
-#ifndef HAL_UART_H
-#define HAL_UART_H
+#ifndef HAL_UART_C
+#define HAL_UART_C
 #include "stdint.h"
 #include "errno.h"
 #include "fm33a0xx_include_all.h"
 #include "soc_init.h"
+#include "uart.h"
 
 // ============== Fm33A0X Uart Define Begin =============== //
-/*
- * UART Name
- */
-typedef enum 
+
+typedef struct 
 {
-  UART_0,
-  UART_1,
-  UART_2,
-  UART_3,
-  UART_4,
-  UART_5
-}hal_uart_name_t;
+  uint8_t * buffer;                                 /*缓存的位置*/
+  uint16_t  capcity;                                /*缓存的容量*/
+  uint16_t  processed;                              /*已经处理到的位置*/
+  uint16_t  point;                                  /*当前有效数据的位置*/
+  uint16_t  Count;
+} SerialDataParams_t;
+
+typedef struct 
+{
+  SerialDataParams_t recv;
+  SerialDataParams_t send;
+} SerialServer_t;
+
+
+
+SerialServer_t SerialServerParams[6];
+
+static const uint8_t   Uart_Irqn[6] =
+{
+  UART0_IRQn, UART1_IRQn, UART2_IRQn, UART3_IRQn, UART4_IRQn, UART5_IRQn
+};
+static const UARTx_Type* uartReg[6]={UART0,UART1,UART2,UART3,UART4,UART5};
+
+static void Serial_InterruptTx (uint8_t port)
+{
+  SerialDataParams_t * pComParams;
+  if (port > UART_5)
+  {
+    return;
+  }
+  pComParams = & (SerialServerParams[port].send);
+
+  if (pComParams->Count > 0)
+  {
+    if (pComParams->processed >= pComParams->capcity)
+    {
+      pComParams->processed = 0;
+    }
+    UARTx_TXREG_Write ((UARTx_Type*)uartReg[port], pComParams->buffer[pComParams->processed]);
+    pComParams->Count--;
+    pComParams->processed++;
+  }
+  else 
+  {
+//    pComParams->point = 0;
+//    pComParams->processed = 0;
+//    UARTx_TXSTA_TXEN_Setable((UARTx_Type*)uartReg[port],DISABLE);
+    UART_UARTIE_RxTxIE_SetableEx((UARTx_Type*)uartReg[port],TxInt,DISABLE);
+  }
+  
+}
+
+static void Serial_InterruptRx (uint8_t port)
+{
+  SerialDataParams_t * pComParams;
+  uint16_t  temp_data = 0;
+
+  if (port > UART_5)
+  {
+    return;
+  }
+  /*PE并未被置起，接收到的数据正确*/
+  pComParams = & (SerialServerParams[port].recv);
+
+  if (pComParams->Count < pComParams->capcity)
+  {
+    temp_data = UARTx_RXREG_Read ((UARTx_Type*)uartReg[port]);
+    temp_data &= 0x00ff;
+
+    pComParams->buffer[pComParams->point++] = temp_data;
+
+    if (pComParams->point >= pComParams->capcity)
+    {
+      pComParams->point = 0;
+    }
+
+    pComParams->Count++;
+  }
+  else //如果接收到的数据超出FIFO容量，新数据覆盖旧数据
+  {
+    temp_data = UARTx_RXREG_Read ((UARTx_Type*)uartReg[port]);
+    temp_data &= 0x00ff;
+
+    pComParams->buffer[pComParams->point++] = temp_data;
+
+    if (pComParams->point >= pComParams->capcity)
+    {
+      pComParams->point = 0;
+    }
+
+    pComParams->processed++;
+
+    if (pComParams->processed >= pComParams->capcity)
+    {
+      pComParams->processed = 0;
+    }
+  }
+}
 
 /*
- * UART Port/Pin
+ U16 Serial_SvSend(U16 com, U8* pBuf, U8 uSize)
+ 功能：将数据从指定com口发送。
+ 输入：要发送数据缓冲区、要发送数据长度、com号
+ 输出：已经填写com口发送缓冲区的数据长度，如果小于uSize，则表示最后?
+  ?段数据没有被?
+  ??出
+ 返回：已发送数据长度
+ 描述：将要发送的数据复制到发送缓冲区，并启动数据传输。
+
  */
-#define UART0RX_Pin						  GPIO_Pin_3
-#define UART0RX_Port 					  GPIOF
-#define UART0TX_Pin						  GPIO_Pin_4
-#define UART0TX_Port 					  GPIOF
+static int16_t Serial_SvSend (uint8_t port, void * vBuf, uint16_t uSize)
+{
+  SerialDataParams_t * pComParams;
+  uint16_t  uCount = 0;
+  uint16_t  uLenTemp = 0;
+  uint8_t *pBuf = (uint8_t*)vBuf;
+  pComParams = & (SerialServerParams[port].send);
 
-#define UART1RX_Pin						  GPIO_Pin_0
-#define UART1RX_Port 					  GPIOB
-#define UART1TX_Pin						  GPIO_Pin_1
-#define UART1TX_Port 					  GPIOB
+  if (pComParams->point >= pComParams->processed)
+  {
+    uLenTemp  = (pComParams->capcity) - (pComParams->point);
+    uLenTemp  = (uLenTemp > uSize ? uSize: uLenTemp); //查找最小值
+    uLenTemp  = (uLenTemp >
+       (pComParams->capcity - pComParams->Count) ? (pComParams->capcity - pComParams->Count): uLenTemp);
+    memcpy ((pComParams->buffer + pComParams->point), (pBuf + uCount), 
+      uLenTemp);
+    pComParams->point += uLenTemp;
 
-//#define UART1RX_Pin						  GPIO_Pin_3
-//#define UART1RX_Port 					  GPIOE
-//#define UART1TX_Pin						  GPIO_Pin_4
-//#define UART1TX_Port 					  GPIOE
+    if (pComParams->point >= pComParams->capcity)
+    {
+      pComParams->point = 0;
+    }
 
-#define UART2RX_Pin						  GPIO_Pin_2
-#define UART2RX_Port 					  GPIOB
-#define UART2TX_Pin						  GPIO_Pin_3
-#define UART2TX_Port 					  GPIOB
+    pComParams->Count += uLenTemp;
+    uCount    += uLenTemp;
+    uSize     -= uLenTemp;
+  }
 
-#define UART3RX_Pin						  GPIO_Pin_10
-#define UART3RX_Port 					  GPIOC
-#define UART3TX_Pin						  GPIO_Pin_11
-#define UART3TX_Port 					  GPIOC
+  if (uSize)
+  {
+    uLenTemp  = (pComParams->processed) - (pComParams->point);
+    uLenTemp  = (uLenTemp > uSize ? uSize: uLenTemp); //查找最小值
+    uLenTemp  = (uLenTemp >
+       (pComParams->capcity - pComParams->Count) ? (pComParams->capcity - pComParams->Count): uLenTemp);
+    pBuf      += uCount;
+    memcpy ((pComParams->buffer + pComParams->point), (pBuf), uLenTemp);
 
-#define UART4RX_Pin						  GPIO_Pin_0
-#define UART4RX_Port 					  GPIOD
-#define UART4TX_Pin						  GPIO_Pin_1
-#define UART4TX_Port 					  GPIOD
+    pComParams->point += uLenTemp;
 
-//#define UART4RX_Pin						  GPIO_Pin_9
-//#define UART4RX_Port 					  GPIOD
-//#define UART4TX_Pin						  GPIO_Pin_10
-//#define UART4TX_Port 					  GPIOD
+    if (pComParams->point >= pComParams->capcity)
+    {
+      pComParams->point = 0;
+    }
 
-#define UART5RX_Pin						  GPIO_Pin_4
-#define UART5RX_Port 					  GPIOC
-#define UART5TX_Pin						  GPIO_Pin_5
-#define UART5TX_Port 					  GPIOC
+    pComParams->Count += uLenTemp;
+    uCount    += uLenTemp;
+    uSize     -= uLenTemp;
+  }
+  if(UART_UARTIE_RxTxIE_GetableEx((UARTx_Type*)uartReg[port],TxInt)==DISABLE)
+  {
+    UARTx_TXSTA_TXEN_Setable((UARTx_Type*)uartReg[port],ENABLE);
+    UART_UARTIE_RxTxIE_SetableEx((UARTx_Type*)uartReg[port],TxInt,ENABLE);
+  }
+
+  return uCount;
+}
+
+/*
+ U16 Com_SvRecv(U16 com, U8 *pBuf, U16 uSize)
+ 功能：从COM接收数据。
+ 输入：接收数据存放地址、要接收的数据长度、Com号
+ 输出：接收到的数据
+ 返回：0：无数据返回，其他实际接收到的数据长度。
+ 描述：从COM口接收指定长度的数据。如果已经接收到的数据大于等于uSize?
+ 返回uSize长度,否则返回实际接收到的长度的数据。
+
+ */
+static int16_t Serial_SvRecv (uint8_t port, uint8_t * pBuf, uint16_t uSize)
+{
+  SerialDataParams_t * pComParams;
+  uint16_t  uCount = 0;
+  uint16_t  uLenTemp = 0;
+  
+  pComParams = & (SerialServerParams[port].recv);
+
+  if (pComParams->point <= pComParams->processed) /*套圈模式*/
+  {
+    uLenTemp  = (pComParams->capcity) - (pComParams->processed);
+    uLenTemp  = (uLenTemp > uSize ? uSize: uLenTemp);
+    uLenTemp  = (uLenTemp > pComParams->Count ? pComParams->Count: uLenTemp);
+
+    memcpy (pBuf, (pComParams->buffer + pComParams->processed), uLenTemp);
+
+    pComParams->processed += uLenTemp;
+
+    if (pComParams->processed >= pComParams->capcity)
+    {
+      pComParams->processed = 0;
+    }
+
+    pComParams->Count -= uLenTemp;
+    uCount    += uLenTemp;
+    uSize     -= uLenTemp;
+
+  }
+
+  if ((uSize) && (pComParams->point > pComParams->processed)) /*未套圈模式*/
+  {
+    uLenTemp  = (pComParams->point) - (pComParams->processed);
+    uLenTemp  = (uLenTemp > uSize ? uSize: uLenTemp);
+    uLenTemp  = (uLenTemp > pComParams->Count ? pComParams->Count: uLenTemp);
+
+    pBuf      += uCount;
+
+    memcpy (pBuf, (pComParams->buffer + pComParams->processed), uLenTemp);
+
+    pComParams->processed += uLenTemp;
+
+    if (pComParams->processed >= pComParams->capcity)
+    {
+      pComParams->processed = 0;
+    }
+
+    pComParams->Count -= uLenTemp;
+    uCount    += uLenTemp;
+    uSize     -= uLenTemp;
+  }
+  
+  return uCount;
+}
+
+static uint32_t SerialGetSendRemain(uint8_t port)
+{
+  SerialDataParams_t * pComParams;
+ 
+  pComParams = & (SerialServerParams[port].send);
+  return pComParams->Count;
+}
+static uint32_t SerialGetRecvRemain(uint8_t port)
+{
+  SerialDataParams_t * pComParams;
+  
+  pComParams = & (SerialServerParams[port].recv);
+  return pComParams->Count;
+}
+
+static void SerialBuffInit(uint8_t port ,uint16_t RxSize,uint16_t TxSize)
+{
+  if (port > UART_5)
+  {
+    return;
+  }
+  SerialServerParams[port].recv.buffer = (uint8_t*)aos_malloc(RxSize);
+  SerialServerParams[port].recv.capcity = RxSize;
+  SerialServerParams[port].recv.processed = 0;
+  SerialServerParams[port].recv.point = 0;
+  SerialServerParams[port].recv.Count = 0;
+  SerialServerParams[port].send.buffer = (uint8_t*)aos_malloc(TxSize);
+  SerialServerParams[port].send.capcity = TxSize;
+  SerialServerParams[port].send.processed = 0;
+  SerialServerParams[port].send.point = 0;
+  SerialServerParams[port].send.Count = 0;
+}
+static void SerialBuffFinalize(uint8_t port )
+{
+  if (port > UART_5)
+  {
+    return;
+  }
+  aos_free(SerialServerParams[port].recv.buffer);
+  aos_free(SerialServerParams[port].send.buffer);
+  memset(&SerialServerParams[port],0,sizeof(SerialServer_t));
+}
+
+
+static void UART_IRQHandler (uint8_t port,UARTx_Type *uartx)
+{
+  if (UART_UARTIF_RxTxIF_ChkEx(uartx,TxInt)) //TX中断
+  {
+    Serial_InterruptTx(port);
+  }
+  if (UART_UARTIF_RxTxIF_ChkEx(uartx,RxInt)) //RX中断
+  {
+    Serial_InterruptRx(port);
+  }
+
+}
+
+void UART0_IRQHandler (void)
+{
+  UART_IRQHandler (UART_0,UART0);
+}
+
+void UART1_IRQHandler (void)
+{
+  UART_IRQHandler (UART_1,UART1);
+}
+
+void UART2_IRQHandler (void)
+{
+  UART_IRQHandler (UART_2,UART2);
+}
+
+void UART3_IRQHandler (void)
+{
+  UART_IRQHandler (UART_3,UART3);
+}
+
+void UART4_IRQHandler (void)
+{
+  UART_IRQHandler (UART_4,UART4);
+}
+
+void UART5_IRQHandler (void)
+{
+  UART_IRQHandler (UART_5,UART5);
+}
+
+
+
 
 // ============== Fm33A0X Uart Define End =============== //
-
-/*
- * UART data width
- */
-typedef enum {
-    DATA_WIDTH_5BIT,
-    DATA_WIDTH_6BIT,
-    DATA_WIDTH_7BIT,
-    DATA_WIDTH_8BIT,
-    DATA_WIDTH_9BIT
-} hal_uart_data_width_t;
-
-/*
- * UART stop bits
- */
-typedef enum {
-    STOP_BITS_1,
-    STOP_BITS_2
-} hal_uart_stop_bits_t;
-
-/*
- * UART flow control
- */
-typedef enum {
-    FLOW_CONTROL_DISABLED,
-    FLOW_CONTROL_CTS,
-    FLOW_CONTROL_RTS,
-    FLOW_CONTROL_CTS_RTS
-} hal_uart_flow_control_t;
-
-/*
- * UART parity
- */
-typedef enum {
-    NO_PARITY,
-    EVEN_PARITY,    
-    ODD_PARITY
-} hal_uart_parity_t;
-
-/*
- * UART mode
- */
-typedef enum {
-    MODE_TX,
-    MODE_RX,
-    MODE_TX_RX
-} hal_uart_mode_t;
-
-/*
- * UART configuration
- */
-typedef struct {
-    uint32_t                baud_rate;
-    hal_uart_data_width_t   data_width;
-    hal_uart_parity_t       parity;
-    hal_uart_stop_bits_t    stop_bits;
-    hal_uart_flow_control_t flow_control;
-    hal_uart_mode_t         mode;
-} uart_config_t;
-
-typedef struct {
-    uint8_t       port;    /* uart port */
-    uart_config_t config;  /* uart config */
-    void         *priv;    /* priv data */
-} uart_dev_t;
 
 /**
  * Initialises a UART interface
@@ -141,9 +345,10 @@ typedef struct {
  *
  * @return  0 : on success, EIO : if an error occurred with any step
  */
+
 int32_t hal_uart_init(uart_dev_t *uart)
 {
-  UART_SInitTypeDef UART_para;
+  UART_InitTypeDef UART_para;
   RCC_ClocksType RCC_Clocks;  
    UARTx_Type *UARTx = NULL;
   
@@ -163,7 +368,7 @@ int32_t hal_uart_init(uart_dev_t *uart)
   }
   
   RCC_PERCLK_SetableEx(UARTCOMCLK, ENABLE);	//UART0~5 all clk enable
-  
+ 
   switch (uart->port)
   {
     case UART_0:
@@ -177,6 +382,7 @@ int32_t hal_uart_init(uart_dev_t *uart)
 			//NVIC_SetPriority(UART0_IRQn,2);//interrupt priority config
 			//NVIC_EnableIRQ(UART0_IRQn);	
       UARTx = UART0;
+      
       break;
     case UART_1:
       RCC_PERCLK_SetableEx(UART1CLK, ENABLE);	//UARTx clk enable	
@@ -241,30 +447,66 @@ int32_t hal_uart_init(uart_dev_t *uart)
     default:
       break;
   }
-  
-  //UART init config
-	UART_para.BaudRate = uart->config.baud_rate;			//baud rate
-	UART_para.DataBit = (UART_DataBitTypeDef)(uart->config.data_width - DATA_WIDTH_7BIT);		  //data bit
-	UART_para.ParityBit = (UART_ParityBitTypeDef) uart->config.parity;			//parity
-	UART_para.StopBit = (UART_StopBitTypeDef) uart->config.stop_bits;			//stop bits
-	
-	RCC_GetClocksFreq(&RCC_Clocks);//get APBClock
-  UART_SInit(UARTx, &UART_para, RCC_Clocks.APBCLK_Frequency);	//uart init
-  
+  SerialBuffInit(uart->port,64,64);
+  RCC_GetClocksFreq(&RCC_Clocks);//get APBClock
+  memset(&UART_para,0,sizeof(UART_para));
   if (MODE_TX == uart->config.mode)
   {
-    UARTx_TXSTA_TXEN_Setable(UARTx, ENABLE);		//send enable
+    //UART_para.TXEN = ENABLE;
   }
-  else if (MODE_TX == uart->config.mode)
+  else if (MODE_RX == uart->config.mode)
   {
-    UARTx_RXSTA_RXEN_Setable(UARTx, ENABLE);		//recv enable
+    UART_para.RXEN = ENABLE;
   }
   else
   {
-    UARTx_RXSTA_RXEN_Setable(UARTx, ENABLE);		//recv enable
-	  UARTx_TXSTA_TXEN_Setable(UARTx, ENABLE);		//send enable
+    //UART_para.TXEN = ENABLE;
+    UART_para.RXEN = ENABLE;
   }
+  UART_para.RXIE = ENABLE;
+  //UART_para.TXIE = ENABLE;
+  UART_para.SPBRG = UART_BaudREGCalc(uart->config.baud_rate,RCC_Clocks.APBCLK_Frequency);
+  UART_para.PDSEL = (uart->config.data_width - DATA_WIDTH_7BIT);
+	
+	if(Eight8Bit == uart->config.data_width-DATA_WIDTH_7BIT)
+	{
+		if(EVEN_PARITY == uart->config.parity)
+		{
+			UART_para.PDSEL = UARTx_RXSTA_PDSEL_8BIT_EVEN;//8bit偶校验
+		}
+		else if(ODD_PARITY == uart->config.parity)
+		{
+			UART_para.PDSEL = UARTx_RXSTA_PDSEL_8BIT_ODD;//8bit奇校验
+		}
+		else
+		{
+			UART_para.PDSEL = UARTx_RXSTA_PDSEL_8BIT_NONE;//8bit数据无校验
+		}
+	}
+	else if(Nine9Bit == uart->config.data_width-DATA_WIDTH_7BIT)
+	{
+		UART_para.PDSEL = UARTx_RXSTA_PDSEL_9BIT_NONE;//9bit数据仅支持无校验模式
+	}
+	else
+	{
+		UART_para.PDSEL = UARTx_RXSTA_PDSEL_8BIT_NONE;//7bit配置会直接覆盖其他配置
+		UART_para.RTX7EN = ENABLE;//收发7bit数据使能(覆盖PDSEL)
+	}
+	
+	if(STOP_BITS_2 == uart->config.stop_bits)
+	{
+		UART_para.STOPSEL = UARTx_TXSTA_STOPSEL_2STOPBIT;
+	}
+	else
+	{
+		UART_para.STOPSEL = UARTx_TXSTA_STOPSEL_1STOPBIT;
+	}
+	
+	
+  UART_Init(UARTx, &UART_para);	//uart init
   
+  NVIC_SetPriority ((IRQn_Type)Uart_Irqn[uart->port], 1);
+  NVIC_EnableIRQ ((IRQn_Type)Uart_Irqn[uart->port]);
   return 0;
 }
 
@@ -280,50 +522,36 @@ int32_t hal_uart_init(uart_dev_t *uart)
 int32_t hal_uart_send(uart_dev_t *uart, const void *data, uint32_t size, uint32_t timeout)
 {
   uint32_t send_size = 0;
-  UARTx_Type *UARTx = NULL;
-  uint32_t lastTick;
+  uint32_t lastMs;
   uint8_t *buf = (uint8_t *)data;
-  
-  switch (uart->port)
+  if(uart->port>UART_5)
   {
-    case UART_0:
-      UARTx = UART0;
-      break;
-    case UART_1:
-      UARTx = UART1;
-      break;
-    case UART_2:
-      UARTx = UART2;
-      break;
-    case UART_3:
-      UARTx = UART3;
-      break;
-    case UART_4:
-      UARTx = UART4;
-      break;
-    case UART_5:
-      UARTx = UART5;
-      break;
-    default:
-      return EIO;
+    return EIO;
   }
-  
-  lastTick = SysTick->VAL;
+  lastMs = krhino_sys_time_get();
+  lastMs -= 1000/aos_get_hz();
   while (send_size < size)
   {
     IWDT_Clr();             //feed dog
-    UARTx_TXREG_Write(UARTx, buf[send_size]);		//write send register
-    while(SET == UARTx_TXBUFSTA_TXFF_Chk(UARTx));	//wait for send over
-    send_size++;
-    if ((lastTick - SysTick->VAL > (timeout * ((__SYSTEM_CLOCK/1000)))) &&
-        (send_size < size))
+    krhino_intrpt_enter();
+    send_size+=Serial_SvSend(uart->port,buf,size);
+    krhino_intrpt_exit();
+    if(krhino_sys_time_get()-lastMs>timeout)
     {
       return EIO;
+    }
+    if(SerialGetSendRemain(uart->port)==0)
+    {
+      if(send_size>=size)
+      {
+        return 0;
+      }
     }
   }
   
   return 0;
 }
+
 
 /**
  * Receive data on a UART interface
@@ -339,8 +567,7 @@ int32_t hal_uart_send(uart_dev_t *uart, const void *data, uint32_t size, uint32_
 int32_t hal_uart_recv(uart_dev_t *uart, void *data, uint32_t expect_size, uint32_t timeout)
 {
   uint32_t recv_size = 0;
-  UARTx_Type *UARTx = NULL;
-  uint32_t lastTick;
+  uint32_t lastMs;
   uint8_t *buf = (uint8_t *)data;
   
   //param check
@@ -349,42 +576,21 @@ int32_t hal_uart_recv(uart_dev_t *uart, void *data, uint32_t expect_size, uint32
   {
     return EIO;
   }
-  
-  switch (uart->port)
+  if(uart->port>UART_5)
   {
-    case UART_0:
-      UARTx = UART0;
-      break;
-    case UART_1:
-      UARTx = UART1;
-      break;
-    case UART_2:
-      UARTx = UART2;
-      break;
-    case UART_3:
-      UARTx = UART3;
-      break;
-    case UART_4:
-      UARTx = UART4;
-      break;
-    case UART_5:
-      UARTx = UART5;
-      break;
-    default:
-      return EIO;
+    return EIO;
   }
-  
-  lastTick = SysTick->VAL;
+    
+  lastMs = krhino_sys_time_get();
+  lastMs -= 1000/aos_get_hz();
   while (recv_size < expect_size)
   {
+    
     IWDT_Clr();             //feed dog
-    if(SET == UARTx_RXBUFSTA_RXFF_Chk(UARTx))		//wait for a byte
-		{
-			buf[recv_size] = UARTx_RXREG_Read(UARTx);			//read recv register
-      recv_size++;
-		}
-    if ((lastTick - SysTick->VAL > (timeout * ((__SYSTEM_CLOCK/1000)))) &&
-        (recv_size < expect_size))
+    krhino_intrpt_enter();
+    recv_size+= Serial_SvRecv(uart->port,buf,expect_size-recv_size);
+    krhino_intrpt_exit();
+    if(krhino_sys_time_get()-lastMs>timeout)
     {
       return EIO;
     }
@@ -409,8 +615,7 @@ int32_t hal_uart_recv_II(uart_dev_t *uart, void *data, uint32_t expect_size,
                       uint32_t *recv_size, uint32_t timeout)
 {
   uint32_t recv_index = 0;
-  UARTx_Type *UARTx = NULL;
-  uint32_t lastTick;
+  uint32_t lastMs;
   uint8_t *buf = (uint8_t *)data;
   
   //param check
@@ -419,48 +624,31 @@ int32_t hal_uart_recv_II(uart_dev_t *uart, void *data, uint32_t expect_size,
   {
     return EIO;
   }
-  
-  switch (uart->port)
+ if(uart->port>UART_5)
   {
-    case UART_0:
-      UARTx = UART0;
-      break;
-    case UART_1:
-      UARTx = UART1;
-      break;
-    case UART_2:
-      UARTx = UART2;
-      break;
-    case UART_3:
-      UARTx = UART3;
-      break;
-    case UART_4:
-      UARTx = UART4;
-      break;
-    case UART_5:
-      UARTx = UART5;
-      break;
-    default:
-      return EIO;
+    return EIO;
   }
-  
-  lastTick = SysTick->VAL;
+  lastMs = krhino_sys_time_get();
+  lastMs -= 1000/aos_get_hz();
   while (recv_index < expect_size)
   {
+ 
     IWDT_Clr();             //feed dog
-    if(SET == UARTx_RXBUFSTA_RXFF_Chk(UARTx))		//wait for a byte
-		{
-			buf[recv_index] = UARTx_RXREG_Read(UARTx);			//read register
-      recv_index++;
-		}
-    if ((lastTick - SysTick->VAL > (timeout * ((__SYSTEM_CLOCK/1000)))) &&
-        (recv_index < expect_size))
+    krhino_intrpt_enter();
+    recv_index += Serial_SvRecv(uart->port,buf,expect_size-recv_index);
+    krhino_intrpt_exit();
+    if(krhino_sys_time_get()-lastMs>timeout)
     {
-      *recv_size = recv_index;
+      if(recv_size!=NULL){
+        *recv_size = recv_index;
+      }
       return EIO;
     }
+    
   }
-  
+  if(recv_size!=NULL){
+    *recv_size = recv_index;
+  }
   return 0;
 }
 
@@ -473,38 +661,18 @@ int32_t hal_uart_recv_II(uart_dev_t *uart, void *data, uint32_t expect_size,
  */
 int32_t hal_uart_finalize(uart_dev_t *uart)
 {
-  UARTx_Type *UARTx = NULL;
-  
+ 
   if (NULL == uart)
   {
     return EIO;
   }
-  
-  switch (uart->port)
+  if(uart->port>UART_5)
   {
-    case UART_0:
-      UARTx = UART0;
-      break;
-    case UART_1:
-      UARTx = UART1;
-      break;
-    case UART_2:
-      UARTx = UART2;
-      break;
-    case UART_3:
-      UARTx = UART3;
-      break;
-    case UART_4:
-      UARTx = UART4;
-      break;
-    case UART_5:
-      UARTx = UART5;
-      break;
-    default:
-      return EIO;
+    return EIO;
   }
-  
-  UARTx_Deinit(UARTx);
+ 
+  UARTx_Deinit((UARTx_Type*)uartReg[uart->port]);
+  SerialBuffFinalize(uart->port);
   return 0;
 }
 
